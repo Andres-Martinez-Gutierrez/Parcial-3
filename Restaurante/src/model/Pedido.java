@@ -18,7 +18,7 @@ public class Pedido {
     private Cliente cliente;
     private ModalidadEntrega modalidad;
     private EstadoPedido estado = EstadoPedido.PENDIENTE;
-    private final List<LineaPedido> lineas = new ArrayList<>();
+    private final List<LineaPedido> lineasPedido = new ArrayList<>();
     private Domicilio domicilio;
 
     /**
@@ -41,7 +41,7 @@ public class Pedido {
     public void agregarProducto(Producto producto, int cantidad) {
         if (estado != EstadoPedido.PENDIENTE)
             throw new IllegalStateException("No se pueden agregar productos a un pedido " + estado);
-        lineas.add(new LineaPedido(producto, cantidad));
+        lineasPedido.add(new LineaPedido(producto, cantidad));
     }
 
     /** Asocia el domicilio contratado. Solo aplica a pedidos con modalidad DOMICILIO. */
@@ -56,7 +56,7 @@ public class Pedido {
     /** Suma de los subtotales de los productos, sin el domicilio. */
     public double calcularValorProductos() {
         double total = 0;
-        for (LineaPedido linea : lineas)
+        for (LineaPedido linea : lineasPedido)
             total += linea.calcularSubtotal();
         return total;
     }
@@ -76,11 +76,11 @@ public class Pedido {
     public void confirmar() {
         if (estado != EstadoPedido.PENDIENTE)
             throw new PedidoNoConfirmableException("El pedido " + codigo + " ya está " + estado);
-        if (lineas.isEmpty())
+        if (lineasPedido.isEmpty())
             throw new PedidoNoConfirmableException("El pedido " + codigo + " no tiene productos");
         if (modalidad == ModalidadEntrega.DOMICILIO && domicilio == null)
             throw new PedidoNoConfirmableException("El pedido " + codigo + " a domicilio no tiene un domicilio asignado");
-        for (LineaPedido linea : lineas) {
+        for (LineaPedido linea : lineasPedido) {
             if (!linea.getProducto().cumpleCondicionesCalidad())
                 throw new ProductoNoCumpleCalidadException(linea.getProducto().getCodigo());
         }
@@ -107,7 +107,7 @@ public class Pedido {
     public ModalidadEntrega getModalidad() { return modalidad; }
     public EstadoPedido getEstado() { return estado; }
     public Domicilio getDomicilio() { return domicilio; }
-    public List<LineaPedido> getLineas() { return Collections.unmodifiableList(lineas); }
+    public List<LineaPedido> getLineasPedido() { return Collections.unmodifiableList(lineasPedido); }
 
     public void setFecha(LocalDate fecha) {
         this.fecha = Validaciones.requireNonNull(fecha, "La fecha es obligatoria");
@@ -131,7 +131,7 @@ public class Pedido {
     @Override
     public String toString() {
         return "Pedido{codigo='" + codigo + "', fecha=" + fecha + ", cliente=" + cliente.getNombreCompleto()
-                + ", modalidad=" + modalidad + ", estado=" + estado + ", lineas=" + lineas.size()
+                + ", modalidad=" + modalidad + ", estado=" + estado + ", lineas=" + lineasPedido.size()
                 + ", total=" + calcularTotal() + "}";
     }
 }

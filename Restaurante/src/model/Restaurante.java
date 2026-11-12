@@ -79,7 +79,7 @@ public class Restaurante {
         for (Pedido p : pedidos)
             if (p.getCodigo().equals(pedido.getCodigo()))
                 throw new IllegalArgumentException("Ya existe un pedido con el código " + pedido.getCodigo());
-        for (LineaPedido linea : pedido.getLineas()) {
+        for (LineaPedido linea : pedido.getLineasPedido()) {
             Producto productoRegistrado = null;
             for (Producto p : menu)
                 if (p.getCodigo().equals(linea.getProducto().getCodigo()))
@@ -163,7 +163,7 @@ public class Restaurante {
         Map<Producto, Integer> unidades = new HashMap<>();
         for (Pedido p : pedidos)
             if (p.getEstado() != EstadoPedido.CANCELADO)
-                for (LineaPedido linea : p.getLineas())
+                for (LineaPedido linea : p.getLineasPedido())
                     unidades.merge(linea.getProducto(), linea.getCantidad(), Integer::sum);
         Producto mejor = null;
         int max = 0;
@@ -181,7 +181,7 @@ public class Restaurante {
         Map<CategoriaProducto, Double> ingresos = new EnumMap<>(CategoriaProducto.class);
         for (Pedido p : pedidos)
             if (p.getEstado() != EstadoPedido.CANCELADO)
-                for (LineaPedido linea : p.getLineas())
+                for (LineaPedido linea : p.getLineasPedido())
                     ingresos.merge(linea.getProducto().getCategoria(), linea.calcularSubtotal(), Double::sum);
         CategoriaProducto mejor = null;
         double max = -1;

@@ -266,7 +266,7 @@ public class Main {
             agregarMas = confirmar("Crear pedido", "¿Desea agregar otro producto?");
         }
 
-        if (pedido.getLineas().isEmpty())
+        if (pedido.getLineasPedido().isEmpty())
             throw new IllegalArgumentException("Debe agregar al menos un producto.");
 
         Object[] decisiones = {"Confirmar", "Guardar borrador", "Descartar"};
@@ -372,7 +372,7 @@ public class Main {
                 .append(" (").append(pedido.getCliente().getNumeroDocumento()).append(')')
                 .append("\nModalidad: ").append(pedido.getModalidad())
                 .append("\n\nPRODUCTOS\n");
-        for (LineaPedido linea : pedido.getLineas()) {
+        for (LineaPedido linea : pedido.getLineasPedido()) {
             Producto producto = linea.getProducto();
             detalle.append(producto.getNombre()).append(" [").append(producto.getCodigo()).append("]")
                     .append("\n  ").append(linea.getCantidad()).append(" x ")
@@ -382,7 +382,7 @@ public class Main {
         detalle.append("\nSubtotal productos: ").append(dinero(pedido.calcularValorProductos()));
         if (pedido.getDomicilio() != null) {
             Domicilio domicilio = pedido.getDomicilio();
-            detalle.append("\nDomicilio: ").append(domicilio.getEmpresa().getClass().getSimpleName())
+            detalle.append("\nDomicilio: ").append(domicilio.getDomicilio().getClass().getSimpleName())
                     .append("\nDistancia: ").append(domicilio.getDistanciaKm()).append(" km")
                     .append("\nCosto domicilio: ").append(dinero(domicilio.calcularValor()));
         } else {
