@@ -89,7 +89,6 @@ public class Main {
             } catch (ElBuenComerException | IllegalArgumentException | IllegalStateException e) {
                 mostrarError(e.getMessage());
             } catch (RuntimeException e) {
-                e.printStackTrace();
                 mostrarError("Ocurrió un error inesperado. Revise la consola para más detalles.");
             }
         }
