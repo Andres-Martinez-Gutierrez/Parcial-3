@@ -7,7 +7,7 @@ import java.util.List;
 /** Cliente registrado en el restaurante, con su historial de pedidos. */
 public class Cliente {
 
-    private String numeroDocumento;
+    private final String numeroDocumento;
     private String nombreCompleto;
     private String telefono;
     private String correo;
@@ -47,10 +47,6 @@ public class Cliente {
     public String getTelefono() { return telefono; }
     public String getCorreo() { return correo; }
     public String getDireccion() { return direccion; }
-
-    public void setNumeroDocumento(String numeroDocumento) {
-        this.numeroDocumento = Validaciones.requireNotBlank(numeroDocumento, "El número de documento es obligatorio");
-    }
 
     public void setNombreCompleto(String nombreCompleto) {
         this.nombreCompleto = Validaciones.requireNotBlank(nombreCompleto, "El nombre del cliente es obligatorio");
