@@ -14,11 +14,20 @@ import model.enumeraciones.CategoriaProducto;
 import model.enumeraciones.EstadoPedido;
 import model.enumeraciones.ModalidadEntrega;
 import model.enumeraciones.TipoPreparacion;
+import model.exception.ElBuenComerException;
 
+import javax.swing.BorderFactory;
+import javax.swing.JButton;
+import javax.swing.JDialog;
+import javax.swing.JLabel;
 import javax.swing.JOptionPane;
+import javax.swing.JPanel;
 import javax.swing.JScrollPane;
 import javax.swing.JTextArea;
+import java.awt.BorderLayout;
 import java.awt.Font;
+import java.awt.Frame;
+import java.awt.GridLayout;
 import java.text.NumberFormat;
 import java.time.LocalDate;
 import java.util.ArrayList;
@@ -31,68 +40,122 @@ public class Main {
             NumberFormat.getCurrencyInstance(Locale.forLanguageTag("es-CO"));
     private static final Restaurante RESTAURANTE =
             new Restaurante("El Buen Comer", "901456789-1", "Armenia, Quindío");
-    private static final List<Pedido> PEDIDOS_PENDIENTES = new ArrayList<>();
-    private static final String[] OPCIONES_MENU = {
-            "Registrar producto", "Registrar cliente", "Crear pedido",
-            "Gestionar pedido", "Consultar pedido y total", "Historial de cliente",
-            "Reportes", "Consultar productos", "Salir"
-    };
 
+    /** Opciones del menú principal, en el orden en que se muestran. */
+    private enum Opcion {
+        REGISTRAR_PRODUCTO("Registrar producto"),
+        REGISTRAR_CLIENTE("Registrar cliente"),
+        CREAR_PEDIDO("Crear pedido"),
+        GESTIONAR_PEDIDO("Gestionar pedido"),
+        PEDIDOS_PENDIENTES("Pedidos pendientes"),
+        CONSULTAR_PEDIDO("Consultar pedido y total"),
+        HISTORIAL_CLIENTE("Historial de cliente"),
+        REPORTES("Reportes"),
+        CONSULTAR_PRODUCTOS("Consultar productos"),
+        SALIR("Salir");
+
+        private final String etiqueta;
+
+        Opcion(String etiqueta) {
+            this.etiqueta = etiqueta;
+        }
+    }
+
+    /**
+     * Punto de entrada del programa. Carga los datos de demostración y muestra el menú principal.
+     *
+     * @param args argumentos de línea de comandos (no se usan)
+     */
     public static void main(String[] args) {
         cargarDatosDePrueba();
-        JOptionPane.showMessageDialog(null,
-                "Bienvenido al sistema de gestión de " + RESTAURANTE.getNombreComercial()
-                        + "\nArmenia, Quindío\n\nSe cargaron productos, clientes y un pedido de demostración.",
-                "El Buen Comer", JOptionPane.INFORMATION_MESSAGE);
+        cargarMenuPrincipla();
+    }
 
-        boolean continuar = true;
-        while (continuar) {
-            int opcion = JOptionPane.showOptionDialog(null,
-                    "Seleccione la operación que desea realizar:",
-                    RESTAURANTE.getNombreComercial() + " | Menú principal",
-                    JOptionPane.DEFAULT_OPTION, JOptionPane.PLAIN_MESSAGE, null,
-                    OPCIONES_MENU, OPCIONES_MENU[0]);
-            if (opcion == JOptionPane.CLOSED_OPTION || opcion == 8) {
-                continuar = false;
-                continue;
-            }
+    /** Se inicializa el menu principal del restaurante y todas sus opciones */
+    private static void cargarMenuPrincipla() {
+        Opcion[] opciones = Opcion.values();
+        String[] etiquetas = new String[opciones.length];
+        for (int i = 0; i < opciones.length; i++)
+            etiquetas[i] = opciones[i].etiqueta;
+
+        while (true) {
+            int indice = elegirEnMenu(etiquetas);
+            if (indice < 0 || opciones[indice] == Opcion.SALIR)
+                break;
             try {
-                switch (opcion) {
-                    case 0:
-                        registrarProducto();
-                        break;
-                    case 1:
-                        registrarCliente();
-                        break;
-                    case 2:
-                        crearPedido();
-                        break;
-                    case 3:
-                        gestionarPedido();
-                        break;
-                    case 4:
-                        consultarPedido();
-                        break;
-                    case 5:
-                        consultarHistorial();
-                        break;
-                    case 6:
-                        mostrarReportes();
-                        break;
-                    case 7:
-                        mostrarMenuProductos();
-                        break;
-                    default:
-                        break;
-                }
+                ejecutar(opciones[indice]);
             } catch (OperacionCancelada ignored) {
                 // Cancelar una ventana vuelve al menú principal sin modificar el registro.
-            } catch (RuntimeException e) {
+            } catch (ElBuenComerException | IllegalArgumentException | IllegalStateException e) {
                 mostrarError(e.getMessage());
+            } catch (RuntimeException e) {
+                e.printStackTrace();
+                mostrarError("Ocurrió un error inesperado. Revise la consola para más detalles.");
             }
         }
     }
 
+    /**
+     * Muestra el menú principal como una lista vertical. Devuelve el índice elegido,
+     * o -1 si el usuario elige "Salir" o cierra la ventana.
+     */
+    private static int elegirEnMenu(String[] etiquetas) {
+        int[] seleccion = {-1};
+        JDialog dialogo = new JDialog((Frame) null,
+                RESTAURANTE.getNombreComercial() + " | Menú principal", true);
+
+        JLabel encabezado = new JLabel("Seleccione la operación que desea realizar:");
+        encabezado.setFont(new Font(Font.SANS_SERIF, Font.BOLD, 14));
+        encabezado.setBorder(BorderFactory.createEmptyBorder(0, 0, 12, 0));
+
+        JPanel botones = new JPanel(new GridLayout(0, 1, 0, 8));
+        for (int i = 0; i < etiquetas.length; i++) {
+            final int indice = i;
+            JButton boton = new JButton(etiquetas[i]);
+            boton.setFont(new Font(Font.SANS_SERIF, Font.PLAIN, 14));
+            boton.setFocusPainted(false);
+            boton.addActionListener(e -> {
+                seleccion[0] = indice;
+                dialogo.dispose();
+            });
+            botones.add(boton);
+        }
+
+        JPanel contenido = new JPanel(new BorderLayout());
+        contenido.setBorder(BorderFactory.createEmptyBorder(16, 16, 16, 16));
+        contenido.add(encabezado, BorderLayout.NORTH);
+        contenido.add(botones, BorderLayout.CENTER);
+
+        dialogo.setDefaultCloseOperation(JDialog.DISPOSE_ON_CLOSE);
+        dialogo.setContentPane(contenido);
+        dialogo.setResizable(false);
+        dialogo.pack();
+        dialogo.setLocationRelativeTo(null);
+        dialogo.setVisible(true);
+        return seleccion[0];
+    }
+
+    /**
+     * Ejecuta la operación elegida en el menú principal.
+     *
+     * @param opcion operación seleccionada por el usuario
+     */
+    private static void ejecutar(Opcion opcion) {
+        switch (opcion) {
+            case REGISTRAR_PRODUCTO -> registrarProducto();
+            case REGISTRAR_CLIENTE -> registrarCliente();
+            case CREAR_PEDIDO -> crearPedido();
+            case GESTIONAR_PEDIDO -> gestionarPedido();
+            case PEDIDOS_PENDIENTES -> mostrarPedidosPendientes();
+            case CONSULTAR_PEDIDO -> consultarPedido();
+            case HISTORIAL_CLIENTE -> consultarHistorial();
+            case REPORTES -> mostrarReportes();
+            case CONSULTAR_PRODUCTOS -> mostrarMenuProductos();
+            default -> { }
+        }
+    }
+
+    /** Registra en el restaurante productos, clientes y un pedido de demostración. */
     private static void cargarDatosDePrueba() {
         PlatoFuerte bandeja = new PlatoFuerte("P001", "Bandeja de la casa",
                 "Carne, arroz, fríjoles y acompañantes", 28000, 25, 450,
@@ -119,6 +182,7 @@ public class Main {
         RESTAURANTE.registrarPedido(pedido);
     }
 
+    /** Pide los datos de un producto según su categoría y lo registra en el menú. */
     private static void registrarProducto() {
         Object[] tipos = {"Plato fuerte", "Bebida", "Postre"};
         int tipo = elegir("Registrar producto", "Seleccione la categoría:", tipos);
@@ -157,6 +221,7 @@ public class Main {
                 "Producto registrado", JOptionPane.INFORMATION_MESSAGE);
     }
 
+    /** Pide los datos de un cliente y lo registra en el restaurante. */
     private static void registrarCliente() {
         String documento = leerTexto("Registrar cliente", "Número de documento:");
         String nombre = leerTexto("Registrar cliente", "Nombre completo:");
@@ -169,9 +234,13 @@ public class Main {
                 "Registro exitoso", JOptionPane.INFORMATION_MESSAGE);
     }
 
+    /**
+     * Crea un pedido paso a paso: código, cliente, modalidad, domicilio si aplica y productos.
+     * Al final el usuario puede confirmarlo, guardarlo como borrador o descartarlo.
+     */
     private static void crearPedido() {
         String codigo = leerTexto("Crear pedido", "Código del pedido:");
-        if (RESTAURANTE.buscarPedido(codigo) != null || buscarBorrador(codigo) != null)
+        if (buscarPedidoEnSistema(codigo) != null)
             throw new IllegalArgumentException("Ya existe un pedido con el código " + codigo);
 
         Cliente cliente = RESTAURANTE.buscarCliente(leerTexto("Crear pedido", "Documento del cliente:"));
@@ -185,7 +254,7 @@ public class Main {
             Object[] empresas = {"RapidoExpress (máximo 12 km)", "EntregaSegura (máximo 20 km)"};
             ServicioDomicilio empresa = elegir("Domicilio", "Seleccione la empresa:", empresas) == 0
                     ? new RapidoExpress() : new EntregaSegura();
-            double distancia = leerDoublePositivo("Domicilio", "Distancia en kilómetros:");
+            double distancia = leerDistanciaAceptada(empresa);
             pedido.asignarDomicilio(new Domicilio(distancia, empresa));
         }
 
@@ -199,39 +268,88 @@ public class Main {
 
         if (pedido.getLineas().isEmpty())
             throw new IllegalArgumentException("Debe agregar al menos un producto.");
-        if (confirmar("Confirmar pedido", detallePedido(pedido) + "\n\n¿Desea confirmar este pedido?")) {
+
+        Object[] decisiones = {"Confirmar", "Guardar borrador", "Descartar"};
+        int decision = elegir("Confirmar pedido",
+                detallePedido(pedido) + "\n\n¿Qué desea hacer con este pedido?", decisiones);
+        if (decision == 0) {
             RESTAURANTE.registrarPedido(pedido);
             mostrarExito("Pedido " + pedido.getCodigo() + " confirmado correctamente.");
-        } else {
-            PEDIDOS_PENDIENTES.add(pedido);
+        } else if (decision == 1) {
+            RESTAURANTE.guardarBorrador(pedido);
             mostrarExito("El pedido quedó guardado como borrador pendiente de confirmación.");
         }
     }
 
+    /**
+     * Gestiona un pedido por su código. Si es un borrador, delega en {@link #gestionarBorrador(Pedido)};
+     * si es un pedido registrado, ofrece solo las acciones válidas para su estado.
+     */
     private static void gestionarPedido() {
-        Pedido pedido = buscarPedidoEnSistema(leerTexto("Gestionar pedido", "Código del pedido:"));
+        String codigo = leerTexto("Gestionar pedido", "Código del pedido:");
+        Pedido borrador = RESTAURANTE.buscarBorrador(codigo);
+        if (borrador != null) {
+            gestionarBorrador(borrador);
+            return;
+        }
+
+        Pedido pedido = RESTAURANTE.buscarPedido(codigo);
         if (pedido == null)
             throw new IllegalArgumentException("No se encontró el pedido.");
 
-        Object[] acciones = {"Confirmar", "Entregar", "Cancelar"};
+        List<String> acciones = new ArrayList<>();
+        if (pedido.getEstado() == EstadoPedido.CONFIRMADO)
+            acciones.add("Entregar");
+        if (pedido.getEstado() != EstadoPedido.ENTREGADO && pedido.getEstado() != EstadoPedido.CANCELADO)
+            acciones.add("Cancelar");
+        if (acciones.isEmpty())
+            throw new IllegalStateException("El pedido " + codigo + " está " + pedido.getEstado()
+                    + " y no admite cambios.");
+
         int accion = elegir("Gestionar pedido",
-                "Pedido " + pedido.getCodigo() + " | Estado: " + pedido.getEstado()
-                        + "\nSeleccione una acción:", acciones);
-        if (accion == 0) {
-            if (RESTAURANTE.buscarPedido(pedido.getCodigo()) != null)
-                throw new IllegalArgumentException("El pedido ya fue registrado.");
-            RESTAURANTE.registrarPedido(pedido);
-            PEDIDOS_PENDIENTES.remove(pedido);
-            mostrarExito("Pedido " + pedido.getCodigo() + " confirmado correctamente.");
-        } else if (accion == 1) {
+                "Pedido " + codigo + " | Estado: " + pedido.getEstado() + "\nSeleccione una acción:",
+                acciones.toArray());
+        if (acciones.get(accion).equals("Entregar")) {
             pedido.entregar();
-            mostrarExito("Pedido " + pedido.getCodigo() + " marcado como entregado.");
+            mostrarExito("Pedido " + codigo + " marcado como entregado.");
         } else {
             pedido.cancelar();
-            mostrarExito("Pedido " + pedido.getCodigo() + " cancelado.");
+            mostrarExito("Pedido " + codigo + " cancelado.");
         }
     }
 
+    /** Acciones sobre un borrador: confirmarlo o eliminarlo. */
+    private static void gestionarBorrador(Pedido borrador) {
+        String codigo = borrador.getCodigo();
+        int accion = elegir("Gestionar pedido",
+                "Borrador " + codigo + " | Estado: PENDIENTE\nSeleccione una acción:",
+                new Object[]{"Confirmar", "Eliminar borrador"});
+        if (accion == 0) {
+            RESTAURANTE.confirmarBorrador(borrador);
+            mostrarExito("Pedido " + codigo + " confirmado correctamente.");
+        } else {
+            RESTAURANTE.eliminarBorrador(borrador);
+            mostrarExito("El borrador " + codigo + " fue eliminado.");
+        }
+    }
+
+    /** Muestra la lista de borradores pendientes de confirmación con su cliente y total. */
+    private static void mostrarPedidosPendientes() {
+        List<Pedido> borradores = RESTAURANTE.getBorradores();
+        if (borradores.isEmpty()) {
+            mostrarTexto("Pedidos pendientes", "No hay pedidos pendientes de confirmación.");
+            return;
+        }
+        StringBuilder texto = new StringBuilder();
+        for (Pedido pedido : borradores) {
+            texto.append(pedido.getCodigo()).append(" | ")
+                    .append(pedido.getCliente().getNombreCompleto()).append(" | ")
+                    .append(dinero(pedido.calcularTotal())).append('\n');
+        }
+        mostrarTexto("Pedidos pendientes", texto.toString());
+    }
+
+    /** Muestra el detalle y el total de un pedido, confirmado o borrador. */
     private static void consultarPedido() {
         Pedido pedido = buscarPedidoEnSistema(leerTexto("Consultar pedido", "Código del pedido:"));
         if (pedido == null)
@@ -239,6 +357,12 @@ public class Main {
         mostrarTexto("Pedido " + pedido.getCodigo(), detallePedido(pedido));
     }
 
+    /**
+     * Arma el texto con los datos, productos, domicilio y total de un pedido.
+     *
+     * @param pedido pedido a describir
+     * @return texto listo para mostrar en un diálogo
+     */
     private static String detallePedido(Pedido pedido) {
         StringBuilder detalle = new StringBuilder();
         detalle.append("Código: ").append(pedido.getCodigo())
@@ -268,6 +392,7 @@ public class Main {
         return detalle.toString();
     }
 
+    /** Muestra los pedidos confirmados de un cliente, consultado por su documento. */
     private static void consultarHistorial() {
         Cliente cliente = RESTAURANTE.buscarCliente(leerTexto("Historial de pedidos", "Documento del cliente:"));
         StringBuilder historial = new StringBuilder("Cliente: ")
@@ -286,6 +411,7 @@ public class Main {
         mostrarTexto("Historial del cliente", historial.toString());
     }
 
+    /** Muestra los indicadores de ventas y la lista de productos no conformes. */
     private static void mostrarReportes() {
         Producto masVendido = RESTAURANTE.productoMasVendido();
         CategoriaProducto categoria = RESTAURANTE.categoriaMayorIngreso();
@@ -311,6 +437,7 @@ public class Main {
         mostrarTexto("Reportes del restaurante", reporte.toString());
     }
 
+    /** Muestra el catálogo de productos con su categoría, precio y estado de calidad. */
     private static void mostrarMenuProductos() {
         StringBuilder menu = new StringBuilder();
         if (RESTAURANTE.getMenu().isEmpty()) {
@@ -328,6 +455,12 @@ public class Main {
         mostrarTexto("Productos disponibles", menu.toString());
     }
 
+    /**
+     * Pide al usuario que escoja un producto del menú.
+     *
+     * @return producto elegido
+     * @throws IllegalArgumentException si el menú no tiene productos
+     */
     private static Producto elegirProducto() {
         List<Producto> productos = RESTAURANTE.getMenu();
         if (productos.isEmpty())
@@ -341,25 +474,42 @@ public class Main {
         return productos.get(elegir("Agregar producto", "Seleccione un producto:", opciones));
     }
 
-    private static Pedido buscarBorrador(String codigo) {
-        for (Pedido pedido : PEDIDOS_PENDIENTES)
-            if (pedido.getCodigo().equals(codigo))
-                return pedido;
-        return null;
+    /** Pide la distancia hasta que la empresa seleccionada la acepte. */
+    private static double leerDistanciaAceptada(ServicioDomicilio empresa) {
+        while (true) {
+            double distancia = leerDoublePositivo("Domicilio", "Distancia en kilómetros:");
+            if (empresa.aceptaRecorrido(distancia))
+                return distancia;
+            mostrarError("La empresa seleccionada no acepta entregas a " + distancia
+                    + " km. Ingrese otra distancia o cancele y elija otra empresa.");
+        }
     }
 
+    /** Busca un pedido confirmado o un borrador por código. */
     private static Pedido buscarPedidoEnSistema(String codigo) {
         Pedido pedido = RESTAURANTE.buscarPedido(codigo);
-        return pedido != null ? pedido : buscarBorrador(codigo);
+        return pedido != null ? pedido : RESTAURANTE.buscarBorrador(codigo);
     }
 
+    /**
+     * Pide el tipo de preparación de un plato fuerte.
+     *
+     * @return tipo de preparación elegido
+     */
     private static TipoPreparacion elegirTipoPreparacion() {
         TipoPreparacion[] tipos = TipoPreparacion.values();
-        Object[] opciones = new Object[tipos.length];
-        System.arraycopy(tipos, 0, opciones, 0, tipos.length);
-        return tipos[elegir("Plato fuerte", "Seleccione el tipo de preparación:", opciones)];
+        return tipos[elegir("Plato fuerte", "Seleccione el tipo de preparación:", tipos)];
     }
 
+    /**
+     * Muestra un diálogo con botones y devuelve el índice del botón elegido.
+     *
+     * @param titulo  título de la ventana
+     * @param mensaje texto que se muestra sobre los botones
+     * @param opciones etiquetas de los botones
+     * @return índice de la opción elegida
+     * @throws OperacionCancelada si el usuario cierra la ventana
+     */
     private static int elegir(String titulo, String mensaje, Object[] opciones) {
         int seleccion = JOptionPane.showOptionDialog(null, mensaje, titulo,
                 JOptionPane.DEFAULT_OPTION, JOptionPane.QUESTION_MESSAGE, null,
@@ -369,6 +519,12 @@ public class Main {
         return seleccion;
     }
 
+    /**
+     * Pide un texto obligatorio. Repite la solicitud mientras el usuario deje el campo vacío.
+     *
+     * @return texto sin espacios al inicio ni al final
+     * @throws OperacionCancelada si el usuario cancela el diálogo
+     */
     private static String leerTexto(String titulo, String mensaje) {
         while (true) {
             String valor = (String) JOptionPane.showInputDialog(null, mensaje, titulo,
@@ -381,6 +537,12 @@ public class Main {
         }
     }
 
+    /**
+     * Pide un texto opcional. Puede devolver una cadena vacía.
+     *
+     * @return texto sin espacios al inicio ni al final
+     * @throws OperacionCancelada si el usuario cancela el diálogo
+     */
     private static String leerOpcional(String titulo, String mensaje) {
         String valor = (String) JOptionPane.showInputDialog(null, mensaje, titulo,
                 JOptionPane.QUESTION_MESSAGE);
@@ -389,6 +551,11 @@ public class Main {
         return valor.trim();
     }
 
+    /**
+     * Pide un número entero mayor que cero. Repite la solicitud si el dato no es válido.
+     *
+     * @return número entero positivo
+     */
     private static int leerEnteroPositivo(String titulo, String mensaje) {
         while (true) {
             String texto = leerTexto(titulo, mensaje);
@@ -403,6 +570,11 @@ public class Main {
         }
     }
 
+    /**
+     * Pide un número decimal mayor que cero. Repite la solicitud si el dato no es válido.
+     *
+     * @return número positivo
+     */
     private static double leerDoublePositivo(String titulo, String mensaje) {
         while (true) {
             double valor = leerDouble(titulo, mensaje);
@@ -412,6 +584,11 @@ public class Main {
         }
     }
 
+    /**
+     * Pide un número decimal. Acepta la coma como separador. Repite la solicitud si no es válido.
+     *
+     * @return número decimal finito
+     */
     private static double leerDouble(String titulo, String mensaje) {
         while (true) {
             String texto = leerTexto(titulo, mensaje).replace(',', '.');
@@ -426,6 +603,12 @@ public class Main {
         }
     }
 
+    /**
+     * Muestra una pregunta de Sí/No.
+     *
+     * @return true si el usuario responde Sí, false si responde No
+     * @throws OperacionCancelada si el usuario cancela o cierra la ventana
+     */
     private static boolean confirmar(String titulo, String mensaje) {
         int resultado = JOptionPane.showConfirmDialog(null, mensaje, titulo,
                 JOptionPane.YES_NO_CANCEL_OPTION, JOptionPane.QUESTION_MESSAGE);
@@ -434,6 +617,7 @@ public class Main {
         return resultado == JOptionPane.YES_OPTION;
     }
 
+    /** Muestra un texto largo, con desplazamiento y fuente monoespaciada. */
     private static void mostrarTexto(String titulo, String contenido) {
         JTextArea area = new JTextArea(contenido, 18, 54);
         area.setEditable(false);
@@ -443,20 +627,29 @@ public class Main {
                 JOptionPane.INFORMATION_MESSAGE);
     }
 
+    /** Muestra un mensaje de error al usuario. */
     private static void mostrarError(String mensaje) {
         JOptionPane.showMessageDialog(null, mensaje, "No se pudo completar",
                 JOptionPane.ERROR_MESSAGE);
     }
 
+    /** Muestra un mensaje de confirmación de una operación exitosa. */
     private static void mostrarExito(String mensaje) {
         JOptionPane.showMessageDialog(null, mensaje, "Operación exitosa",
                 JOptionPane.INFORMATION_MESSAGE);
     }
 
+    /**
+     * Da formato de moneda colombiana a un valor.
+     *
+     * @param valor cantidad en pesos
+     * @return cantidad formateada, por ejemplo "$ 1.000"
+     */
     private static String dinero(double valor) {
         return MONEDA.format(valor);
     }
 
+    /** Señal interna: el usuario canceló una ventana y no debe mostrarse ningún error. */
     private static final class OperacionCancelada extends RuntimeException {
     }
 }

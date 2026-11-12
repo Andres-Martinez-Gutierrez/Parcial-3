@@ -20,6 +20,7 @@ public class Restaurante {
     private final List<Producto> menu = new ArrayList<>();
     private final List<Cliente> clientes = new ArrayList<>();
     private final List<Pedido> pedidos = new ArrayList<>();
+    private final List<Pedido> borradores = new ArrayList<>();
 
     /**
      * Crea el restaurante con su menú, clientes y pedidos vacíos.
@@ -93,12 +94,50 @@ public class Restaurante {
         registrado.agregarPedido(pedido);
     }
 
-    /** Pedido con ese código, o null si no existe. */
+    /** Pedido confirmado o entregado con ese código, o null si no existe. */
     public Pedido buscarPedido(String codigo) {
         for (Pedido p : pedidos)
             if (p.getCodigo().equals(codigo))
                 return p;
         return null;
+    }
+
+    /**
+     * Guarda un pedido como borrador pendiente de confirmación. El código no puede repetirse
+     * con un pedido registrado ni con otro borrador.
+     *
+     * @throws IllegalArgumentException si el código ya existe
+     */
+    public void guardarBorrador(Pedido pedido) {
+        Validaciones.requireNonNull(pedido, "El pedido es obligatorio");
+        if (buscarPedido(pedido.getCodigo()) != null || buscarBorrador(pedido.getCodigo()) != null)
+            throw new IllegalArgumentException("Ya existe un pedido con el código " + pedido.getCodigo());
+        borradores.add(pedido);
+    }
+
+    /** Borrador con ese código, o null si no existe. */
+    public Pedido buscarBorrador(String codigo) {
+        for (Pedido p : borradores)
+            if (p.getCodigo().equals(codigo))
+                return p;
+        return null;
+    }
+
+    /**
+     * Confirma un borrador y lo registra. Si la confirmación falla, el borrador se conserva.
+     *
+     * @throws IllegalArgumentException si el pedido no es un borrador de este restaurante
+     */
+    public void confirmarBorrador(Pedido pedido) {
+        if (!borradores.contains(pedido))
+            throw new IllegalArgumentException("El pedido " + pedido.getCodigo() + " no es un borrador pendiente");
+        registrarPedido(pedido);
+        borradores.remove(pedido);
+    }
+
+    /** Elimina un borrador pendiente. No hace nada si el pedido no es un borrador. */
+    public void eliminarBorrador(Pedido pedido) {
+        borradores.remove(pedido);
     }
 
     /** Ingresos por productos de los pedidos no cancelados, sin domicilios. */
@@ -167,6 +206,7 @@ public class Restaurante {
     public List<Producto> getMenu() { return Collections.unmodifiableList(menu); }
     public List<Cliente> getClientes() { return Collections.unmodifiableList(clientes); }
     public List<Pedido> getPedidos() { return Collections.unmodifiableList(pedidos); }
+    public List<Pedido> getBorradores() { return Collections.unmodifiableList(borradores); }
     public String getNombreComercial() { return nombreComercial; }
     public String getNit() { return nit; }
     public String getDireccion() { return direccion; }
