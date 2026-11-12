@@ -5,7 +5,7 @@ import model.enumeraciones.CategoriaProducto;
 /** Producto del menú. Cada categoría define su precio de venta y sus condiciones de calidad. */
 public abstract class Producto {
 
-    private String codigo;
+    private final String codigo;
     private String nombre;
     private String descripcion;
     private double precioBase;
@@ -37,10 +37,6 @@ public abstract class Producto {
     public String getDescripcion() { return descripcion; }
     public double getPrecioBase() { return precioBase; }
     public int getTiempoPreparacion() { return tiempoPreparacion; }
-
-    public void setCodigo(String codigo) {
-        this.codigo = Validaciones.requireNotBlank(codigo, "El código del producto es obligatorio");
-    }
 
     public void setNombre(String nombre) {
         this.nombre = Validaciones.requireNotBlank(nombre, "El nombre del producto es obligatorio");

@@ -13,7 +13,7 @@ import java.util.List;
 /** Pedido de un cliente con sus productos, su modalidad y, si aplica, su domicilio. */
 public class Pedido {
 
-    private String codigo;
+    private final String codigo;
     private LocalDate fecha;
     private Cliente cliente;
     private ModalidadEntrega modalidad;
@@ -109,10 +109,6 @@ public class Pedido {
     public Domicilio getDomicilio() { return domicilio; }
     public List<LineaPedido> getLineas() { return Collections.unmodifiableList(lineas); }
 
-    public void setCodigo(String codigo) {
-        this.codigo = Validaciones.requireNotBlank(codigo, "El código del pedido es obligatorio");
-    }
-
     public void setFecha(LocalDate fecha) {
         this.fecha = Validaciones.requireNonNull(fecha, "La fecha es obligatoria");
     }
@@ -123,10 +119,6 @@ public class Pedido {
 
     public void setModalidad(ModalidadEntrega modalidad) {
         this.modalidad = Validaciones.requireNonNull(modalidad, "La modalidad es obligatoria");
-    }
-
-    public void setEstado(EstadoPedido estado) {
-        this.estado = Validaciones.requireNonNull(estado, "El estado es obligatorio");
     }
 
     /** Asigna o quita el domicilio (null). Solo puede tenerlo un pedido con modalidad DOMICILIO. */

@@ -79,13 +79,15 @@ public class Restaurante {
             if (p.getCodigo().equals(pedido.getCodigo()))
                 throw new IllegalArgumentException("Ya existe un pedido con el código " + pedido.getCodigo());
         for (LineaPedido linea : pedido.getLineas()) {
-            boolean enMenu = false;
+            Producto productoRegistrado = null;
             for (Producto p : menu)
                 if (p.getCodigo().equals(linea.getProducto().getCodigo()))
-                    enMenu = true;
-            if (!enMenu)
+                    productoRegistrado = p;
+            if (productoRegistrado == null)
                 throw new IllegalArgumentException("El producto " + linea.getProducto().getCodigo() + " no pertenece al menú");
+            linea.setProducto(productoRegistrado);
         }
+        pedido.setCliente(registrado);
         pedido.confirmar();
         pedidos.add(pedido);
         registrado.agregarPedido(pedido);
